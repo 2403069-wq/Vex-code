@@ -8,13 +8,11 @@ bool intake_expul_activado = false;
 
 // Chassis constructor
 ez::Drive chassis(
-    // These are your drive motors, the first motor is used for sensing!
-    {6, 7, 8},     // Left Chassis Ports (negative port will reverse it!)
-    {-1, -2, -3},  // Right Chassis Ports (negative port will reverse it!)
-
-    11,      // IMU Port
-    4.125,  // Wheel Diameter (Remember, 4" wheels without screw holes are actually 4.125!)
-    280);   // Wheel RPM = cartridge * (motor gear / wheel gear)
+    {-6, -7, -8},
+    {1, 2, 3},
+    11,
+    4.125,
+    280);
 
 // Uncomment the trackers you're using here!
 // - `8` and `9` are smart ports (making these negative will reverse the sensor)
@@ -102,26 +100,12 @@ void competition_initialize() {
  * from where it left off.
  */
 void autonomous() {
-  chassis.pid_targets_reset();                // Resets PID targets to 0
-  chassis.drive_imu_reset();                  // Reset gyro position to 0
-  chassis.drive_sensor_reset();               // Reset drive sensors to 0
-  chassis.odom_xyt_set(0_in, 0_in, 0_deg);    // Set the current position, you can start at a specific position with this
-  chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
+  chassis.pid_targets_reset();
+  chassis.drive_sensor_reset();
+  chassis.odom_xyt_set(0_in, 0_in, 0_deg);
+  chassis.drive_brake_set(MOTOR_BRAKE_BRAKE);
 
-  /*
-  Odometry and Pure Pursuit are not magic
-
-  It is possible to get perfectly consistent results without tracking wheels,
-  but it is also possible to have extremely inconsistent results without tracking wheels.
-  When you don't use tracking wheels, you need to:
-   - avoid wheel slip
-   - avoid wheelies
-   - avoid throwing momentum around (super harsh turns, like in the example below)
-  You can do cool curved motions, but you have to give your robot the best chance
-  to be consistent
-  */
-
-  ez::as::auton_selector.selected_auton_call();  // Calls selected auton from autonomous selector
+  ez::as::auton_selector.selected_auton_call();
 }
 
 /**
@@ -231,9 +215,10 @@ void opcontrol() {
     pros::Controller master(pros::E_CONTROLLER_MASTER);
 
     while (true) {
-                  ez_template_extras();
+        ez_template_extras();
+
         int forward = -master.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-        int turn = -master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+        int turn = master.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
         int left_power = forward + turn;
         int right_power = forward - turn;
@@ -241,36 +226,27 @@ void opcontrol() {
         left_motors.move(left_power);
         right_motors.move(right_power);
 
-        // Toggle con botón A para activar/desactivar intake_expul
         if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)) {
             intake_expul_activado = !intake_expul_activado;
         }
 
-        // Control del intake principal
         int intake_power = 0;
 
         if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
-            intake_power = -127;   // hacia atrás
+            intake_power = -127;
         }
         else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-            intake_power = 127;    // hacia delante
-        }
-        else {
-            intake_power = 0;
+            intake_power = 127;
         }
 
-        // intake principal siempre funciona
         intake_motors.move(intake_power);
 
-        // intake_expul solo funciona si está activado con A
         if (intake_expul_activado) {
             intake_expul.move(intake_power);
         } else {
             intake_expul.move(0);
         }
 
-
-        // Selector
         if (master.get_digital(pros::E_CONTROLLER_DIGITAL_X)) {
             selector.move(-127);
         } 
@@ -281,7 +257,6 @@ void opcontrol() {
             selector.move(0);
         }
 
-        // Almacén
         if (master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
             almacen.move(127);
         } 
@@ -292,13 +267,13 @@ void opcontrol() {
             almacen.move(0);
         }
 
+        if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+            piston.set_value(true);
+        }
+        else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+            piston.set_value(false);
+        }
+
         pros::delay(10);
-// Pistón control directo
-if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
-    piston.set_value(true);   // extender
-}
-else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-    piston.set_value(false);  // retraer
-}
     }
 }

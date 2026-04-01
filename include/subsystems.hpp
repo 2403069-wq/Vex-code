@@ -7,8 +7,8 @@
 extern Drive chassis;
 
 // tren motriz
-inline pros::MotorGroup left_motors({6, 7, 8});
-inline pros::MotorGroup right_motors({-1, -2, -3});
+inline pros::MotorGroup left_motors({-6, -7, -8});
+inline pros::MotorGroup right_motors({1, 2, 3});
 
 // selector
 inline pros::Motor selector(10);
