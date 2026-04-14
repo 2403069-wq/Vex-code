@@ -16,11 +16,11 @@ inline pros::Motor selector(10);
 // almacén
 inline pros::Motor almacen(-9);
 
-// succión
-inline pros::MotorGroup intake_motors({4, 5});
-inline pros::Motor intake_expul(-12);
+    // succión
+    inline pros::MotorGroup intake_motors({4, 5});
+    inline pros::Motor intake_expul(-12);
 
-extern bool intake_expul_activado;
+    extern bool intake_expul_activado;
 
 // pistón
 inline pros::adi::DigitalOut piston('A');
